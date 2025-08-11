@@ -23,7 +23,7 @@ from dataclasses import asdict, dataclass
 from typing import Final, Iterable, List, Mapping, Optional, Sequence, Tuple
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeoutError
 
-# --------- Konfiguration ---------
+# --------- Configuration ---------
 USER_AGENT: Final[str] = "URLRegexScanner/1.0 (+https://localhost) Python-urllib"
 ALLOWED_SCHEMES: Final[Tuple[str, ...]] = ("http", "https")
 ALLOWED_CONTENT_TYPES_PREFIX: Final[Tuple[str, ...]] = (
@@ -35,7 +35,7 @@ ALLOWED_CONTENT_TYPES_PREFIX: Final[Tuple[str, ...]] = (
 DEFAULT_HTTP_TIMEOUT_S: Final[float] = 10.0
 DEFAULT_MAX_BYTES: Final[int] = 5_000_000  # 5 MB
 DEFAULT_MAX_MATCHES: Final[int] = 1000
-DEFAULT_REGEX_TIMEOUT_S: Final[float] = 2.0  # Gesamtschranke für den kompletten Suchlauf
+DEFAULT_REGEX_TIMEOUT_S: Final[float] = 2.0  # Overall restriction for the entire scan 
 
 FLAGS_MAP: Final[Mapping[str, int]] = {
     "i": re.IGNORECASE,
@@ -45,7 +45,7 @@ FLAGS_MAP: Final[Mapping[str, int]] = {
 }
 
 
-# --------- Datenmodelle ---------
+# --------- Data models ---------
 @dataclass(frozen=True)
 class MatchResult:
     start: int
@@ -65,7 +65,7 @@ class ScanResult:
     charset: str
 
 
-# --------- Hilfsfunktionen ---------
+# --------- Helper functions ---------
 def validate_url(url: str) -> urllib.parse.ParseResult:
     parsed = urllib.parse.urlparse(url)
     if parsed.scheme not in ALLOWED_SCHEMES:
@@ -80,7 +80,7 @@ def host_is_private_or_loopback(hostname: str) -> bool:
     try:
         infos = socket.getaddrinfo(hostname, None)  # type: ignore[no-untyped-call]
     except socket.gaierror:
-        # DNS-Auflösung fehlgeschlagen – nicht privat, aber Aufruf wird später scheitern
+        # DNS resolution failed – not private, but call will fail later 
         return False
 
     for family, _, _, _, sockaddr in infos:
@@ -105,12 +105,12 @@ def _decompress_if_needed(raw: bytes, content_encoding: Optional[str]) -> bytes:
         # gzip wrapper
         return zlib.decompress(raw, zlib.MAX_WBITS | 16)
     if enc == "deflate":
-        # zlib or raw deflate – versuchen mit zlib header, sonst raw
+        # zlib or raw deflate – try zlib header, raw else
         try:
             return zlib.decompress(raw)
         except zlib.error:
             return zlib.decompress(raw, -zlib.MAX_WBITS)
-    # Unbekannt -> unverändert
+    # unknown -> unchanged
     return raw
 
 
@@ -134,14 +134,14 @@ def fetch_text(
     req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
     try:
         with urllib.request.urlopen(req, timeout=timeout_s) as resp:  # type: ignore[no-untyped-call]
-            # Content-Type validieren
+            # Validate Content-Type
             ctype_full = resp.headers.get("Content-Type", "")
             ctype = ctype_full.split(";", 1)[0].strip().lower()
 
             if not any(ctype.startswith(pref) for pref in ALLOWED_CONTENT_TYPES_PREFIX):
                 raise ValueError(f"Unsupported Content-Type: {ctype_full!r}")
 
-            # Bytes begrenzen
+            # Limit bytes
             chunk_size = 64 * 1024
             remaining = max_bytes
             chunks: List[bytes] = []
@@ -156,14 +156,14 @@ def fetch_text(
 
             raw = b"".join(chunks)
 
-            # Dekomprimieren (gzip/deflate)
+            # Decompress (gzip/deflate)
             raw = _decompress_if_needed(raw, resp.headers.get("Content-Encoding"))
 
-            # Charset bestimmen
+            # Determine charset
             charset = "utf-8"
-            # Aus dem HTTP-Header
+
+            # From HTTP-Header
             if "charset=" in ctype_full.lower():
-                # z. B. text/html; charset=UTF-8
                 try:
                     charset = ctype_full.lower().split("charset=", 1)[1].split(";")[0].strip()
                 except Exception:
@@ -172,11 +172,10 @@ def fetch_text(
             try:
                 text = raw.decode(charset, errors="replace")
             except LookupError:
-                # Unbekanntes Charset -> UTF-8 Fallback
+                # Unknown charset -> UTF-8 Fallback
                 charset = "utf-8"
                 text = raw.decode("utf-8", errors="replace")
 
-            # Normalisieren (optional)
             text = text.replace("\r\n", "\n").replace("\r", "\n")
 
             return text, len(raw), charset
@@ -204,7 +203,7 @@ def _regex_worker(
 ) -> List[MatchResult]:
     regex = re.compile(pattern, flags)
     results: List[MatchResult] = []
-    # finditer ist speicherschonend; wir kappen die Anzahl
+
     for m in regex.finditer(text):
         groups: Tuple[str, ...] = tuple(g if g is not None else "" for g in m.groups())
         results.append(
