@@ -278,6 +278,7 @@ def scan_url(
     )
 
 
+# --------- CLI ---------
 def build_arg_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Fetch a URL and search its textual content with a regular expression."
@@ -328,12 +329,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     except (ConnectionError, MemoryError, TimeoutError) as e:
         print(f"[ERROR] {e}", file=sys.stderr)
         return 3
-    except Exception as e:  # Unerwartet – generischer Fallback
+    except Exception as e:
         print(f"[ERROR] Unexpected error: {e}", file=sys.stderr)
         return 1
 
     if args.json:
-        # Dataclasses sauber serialisieren
         payload = asdict(result)
         print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
