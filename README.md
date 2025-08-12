@@ -2,7 +2,7 @@
 
 A small, standard-library Python tool that fetches a URL and searches its textual content with a regular expression — with safety in mind.
 
-> File: `url_regex_scanner.py` • Python 3.8+
+> File: `urlregscan.py` • Python 3.8+
 
 ---
 
@@ -31,19 +31,19 @@ A small, standard-library Python tool that fetches a URL and searches its textua
 ## Quick start
 
 ```bash
-python url_regex_scanner.py https://example.com "(?i)example"
+python urlregscan.py https://example.com "(?i)example"
 ```
 
 With JSON output and a higher size cap:
 
 ```bash
-python url_regex_scanner.py --json --max-bytes 2000000 https://example.com "\bex(am|em)ple\b"
+python urlregscan.py --json --max-bytes 2000000 https://example.com "\bex(am|em)ple\b"
 ```
 
 Allow private targets (e.g. for *local* testing — disabled by default):
 
 ```bash
-python url_regex_scanner.py --allow-private http://127.0.0.1:8000 "token=[0-9a-f]+"
+python urlregscan.py --allow-private http://127.0.0.1:8000 "token=[0-9a-f]+"
 ```
 
 ---
@@ -67,13 +67,13 @@ pip install --upgrade pip mypy ruff pytest
 ## CLI usage
 
 ```text
-usage: url_regex_scanner.py [-h] [-i] [-m] [-s] [-x]
-                            [--http-timeout HTTP_TIMEOUT]
-                            [--re-timeout RE_TIMEOUT]
-                            [--max-bytes MAX_BYTES]
-                            [--max-matches MAX_MATCHES]
-                            [--allow-private] [--json]
-                            url pattern
+usage: urlregscan.py    [-h] [-i] [-m] [-s] [-x]
+                        [--http-timeout HTTP_TIMEOUT]
+                        [--re-timeout RE_TIMEOUT]
+                        [--max-bytes MAX_BYTES]
+                        [--max-matches MAX_MATCHES]
+                        [--allow-private] [--json]
+                        url pattern
 ```
 
 **Arguments**
@@ -139,7 +139,7 @@ First matches:
 ## Programmatic use
 
 ```python
-from url_regex_scanner import scan_url
+from urlregscan import scan_url
 
 result = scan_url(
     "https://example.com",
@@ -191,8 +191,8 @@ for m in result.matches:
 ### Code style & typing
 
 ```bash
-mypy url_regex_scanner.py
-ruff check url_regex_scanner.py
+mypy urlregscan.py
+ruff check urlregscan.py
 python -m pytest -q  # if you add tests
 ```
 
@@ -213,7 +213,7 @@ strict_optional = True
 
 ```python
 # tests/test_scanner.py
-from url_regex_scanner import scan_url
+from urlregscan import scan_url
 
 def test_example_com():
     r = scan_url("https://example.com", r"(?i)\bexample\b")
